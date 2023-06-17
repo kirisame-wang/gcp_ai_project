@@ -1,13 +1,12 @@
 flask
-line-bot-sdk
-wheel
-grpcio
-google-cloud-firestore
 flask_cors
 line-bot-sdk
-google-cloud-storage
-pandas
 gunicorn
+google-cloud-firestore
 google-cloud-logging
-tensorflow-cpu == 2.4.1
+google-cloud-storage
+grpcio
+pandas
 Pillow
+tensorflow-cpu
+wheel

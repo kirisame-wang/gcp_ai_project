@@ -4,46 +4,45 @@ line用戶封鎖時，將資料庫內的用戶資料更改為已封鎖。
 取出用戶個資時，傳入用戶id，作為檢索條件
 '''
 
-from models.user import User
-from flask import Request
-from linebot import (
-    LineBotApi
-)
-
+# from flask import Request
 import os
-from daos.user_dao import UserDAO
-
-# 圖片下載與上傳專用
 import urllib.request
+
 from google.cloud import storage
+from linebot import LineBotApi
+# from linebot.models import TextSendMessage, ImageSendMessage
+
+from daos import UserDAO
+from models import User
+from utils import bucket_name, line_bot_api
 
 
 class UserService:
-    line_bot_api = LineBotApi(channel_access_token=os.environ["LINE_CHANNEL_ACCESS_TOKEN"])
-
     '''
     取得line event，將line event拿去取個資，轉換成User，並將其照片取出，存回cloud storage，
     並用cloudstorage的連結取代user的line圖片連結
     '''
 
     @classmethod
-    def line_user_follow(cls, event):
-        # 取個資
-        line_user_profile = cls.line_bot_api.get_profile(event.source.user_id)
-        # print(line_user_profile)
+    def line_user_follow(cls, event) -> None:
+        # Welcome message
+        # line_bot_api.reply_message(
+        #     event.reply_token,
+        #     messages=[TextSendMessage("歡迎加入椿由心理諮商所的官方帳號！"),
+        #               TextSendMessage("您可以在這裡預約首次諮詢時間，參與我們精心準備的小活動，或連繫專人為您服務。")])
 
-        # 將個資轉換成user
+        # Parse the user's profile
+        line_user_profile = line_bot_api.get_profile(event.source.user_id)
         user = User(
             line_user_id=line_user_profile.user_id,
             line_user_pic_url=line_user_profile.picture_url,
             line_user_nickname=line_user_profile.display_name,
             line_user_status=line_user_profile.status_message,
             line_user_system_language=line_user_profile.language,
-            blocked=False
-        )
+            line_bot_state="",
+            blocked=False)
 
         '''
-        # ，
         先確認用戶的照片連結是否正常，
             若存在，取得用戶照片，存放回cloud storage
             並將連結存回user的連結
@@ -55,7 +54,6 @@ class UserService:
 
             # 上傳至bucket
             storage_client = storage.Client()
-            bucket_name = os.environ['USER_INFO_GS_BUCKET_NAME']
             destination_blob_name = f'{user.line_user_id}/user_pic.png'
             bucket = storage_client.bucket(bucket_name)
             blob = bucket.blob(destination_blob_name)
@@ -68,6 +66,9 @@ class UserService:
         # 存入資料庫
         UserDAO.save_user(user)
 
+        # 移除本地檔案
+        os.remove(file_name)
+
         # 打印結果
         # print(user)
 
@@ -75,20 +76,20 @@ class UserService:
         # 關注的部分，不回傳，交由控制台回傳
         pass
 
-    # 從資料庫內取出用戶資料，並將其blocked狀態，更改為True
+
     @classmethod
-    def line_user_unfollow(cls, event):
+    def line_user_unfollow(cls, event) -> None:
+        # Get the user's profile and update the blocked state
         user = UserDAO.get_user(event.source.user_id)
         user.blocked = True
         UserDAO.save_user(user)
         # print(user)
         # print('用戶已封鎖')
 
-        pass
 
-    # 依照用戶id，取回用戶資料
     @classmethod
-    def get_user(cls, user_id: str):
+    def get_user(cls, user_id: str) -> User:
+        # Get the user's data in the database with the user's id
         user = UserDAO.get_user(user_id)
         # print(user)
         return user

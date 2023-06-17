@@ -4,12 +4,12 @@ save_user(user:User) :新增資料時，若有重複資料，則採更新
 get_user(user_id:str):取用資料，開放以user_id的方式尋找
 '''
 
-from models.user import User
+from models import User
 from google.cloud import firestore
 
 
 class UserDAO:
-    # 建立客戶端
+    # Initiate the database
     db = firestore.Client()
     users_ref = db.collection(u'users')
 

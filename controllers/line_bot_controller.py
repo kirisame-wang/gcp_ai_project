@@ -4,23 +4,11 @@
     從資料庫提取用戶數據，修改用戶的封鎖狀態後，存回資料庫
 '''
 
-from linebot import (
-    LineBotApi, WebhookHandler
-)
-import os
-
-# 載入Follow事件
-from linebot.models.events import (
-    FollowEvent, UnfollowEvent
-)
-
-from services.image_service import ImageService
-from services.user_service import UserService
-from services.video_service import VideoService
-from services.audio_service import AudioService
-
+# import os
 from urllib.parse import parse_qs
 
+# from daos import UserDAO
+from services import AudioService, ImageService, UserService, VideoService, TextService
 
 class LineBotController:
 
@@ -30,33 +18,36 @@ class LineBotController:
         # print(event)
         UserService.line_user_follow(event)
 
+
     @classmethod
     def unfollow_event(cls, event):
         UserService.line_user_unfollow(event)
 
-    # 未來可能會判斷用戶快取狀態
-    # 現在暫時無
+
+    # TODO: 未來可能會判斷用戶快取狀態，現在暫時無
     @classmethod
     def handle_text_message(cls, event):
+        TextService.line_user_reply_text(event)
+        return "OK"
 
-        return None
 
-    # 用戶收到照片時的處理辦法
     @classmethod
     def handle_image_message(cls, event):
         ImageService.line_user_upload_image(event)
         return "OK"
 
-    # 用戶收到照片時的處理辦法
+
     @classmethod
     def handle_video_message(cls, event):
         VideoService.line_user_upload_video(event)
         return "OK"
 
+
     @classmethod
     def handle_audio_message(cls, event):
-        AudioService.line_user_upload_video(event)
+        AudioService.line_user_upload_audio(event)
         return "OK"
+
 
     # 擷取event的data欄位，並依照function_name，丟入不同的方法
     @classmethod
@@ -69,6 +60,5 @@ class LineBotController:
         detect_function_name = query_string_dict.get('function_name')[0]
 
         # Postbakc function 功能對應轉發
-
 
         return 'no'

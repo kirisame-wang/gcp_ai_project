@@ -6,38 +6,31 @@
 
 '''
 
-from models.user import User
-from flask import Request
-from linebot import (
-    LineBotApi
-)
-
+# from flask import Request
 import os
-from daos.user_dao import UserDAO
-from linebot.models import (
-    TextSendMessage
-)
+# import urllib.request
 
-
-# 圖片下載與上傳專用
-import urllib.request
 from google.cloud import storage
+from linebot import LineBotApi
+from linebot.models import TextSendMessage
+
+# from daos import UserDAO
+# from models import User
+from utils import bucket_name, line_bot_api
 
 
 class VideoService:
-    line_bot_api = LineBotApi(channel_access_token=os.environ["LINE_CHANNEL_ACCESS_TOKEN"])
-
     '''
     用戶上傳照片
     將照片取回
     將照片存入CloudStorage內
     '''
-    @classmethod
-    def line_user_upload_video(cls,event):
 
+    @classmethod
+    def line_user_upload_video(cls, event):
         # 取出照片
-        image_blob = cls.line_bot_api.get_message_content(event.message.id)
-        temp_file_path=f"""{event.message.id}.mp4"""
+        image_blob = line_bot_api.get_message_content(event.message.id)
+        temp_file_path = f"""{event.message.id}.mp4"""
 
         #
         with open(temp_file_path, 'wb') as fd:
@@ -46,7 +39,6 @@ class VideoService:
 
         # 上傳至bucket
         storage_client = storage.Client()
-        bucket_name = os.environ['USER_INFO_GS_BUCKET_NAME']
         destination_blob_name = f'{event.source.user_id}/video/{event.message.id}.mp4'
         bucket = storage_client.bucket(bucket_name)
         blob = bucket.blob(destination_blob_name)
@@ -56,7 +48,7 @@ class VideoService:
         os.remove(temp_file_path)
 
         # 回覆消息
-        cls.line_bot_api.reply_message(
+        line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(f"""影片已上傳，請期待未來的AI服務！""")
+            TextSendMessage("影片已上傳，請期待未來的AI服務！")
         )
